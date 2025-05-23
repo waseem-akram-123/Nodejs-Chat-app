@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Chat APP</title>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <h1>Simple Real-Time Chat</h1>
+    <div id="userCount">Users online: 0</div>
+    <div id="messages"></div>
+    <div style="display: flex; margin-top: 10px">
+      <input type="text" id="messageInput" placeholder="Type a message..." />
+      <button id="sendBtn">Send</button>
+    </div>
+
+    <audio
+      id="notificationSound"
+      src="https://www.soundjay.com/buttons/sounds/button-3.mp3"
+      preload="auto"
+    ></audio>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+      const socket = io();
+
+      const userCountDiv = document.getElementById("userCount");
+      const messagesDiv = document.getElementById("messages");
+      const messageInput = document.getElementById("messageInput");
+      const sendBtn = document.getElementById("sendBtn");
+
+      function playSound() {
+        const sound = document.getElementById("notificationSound");
+        sound.play();
+      }
+
+      // 🆕 Store the current user's username
+      let currentUsername = "";
+
+      // 🆕 Receive your assigned username from the server
+      socket.on("yourInfo", (data) => {
+        currentUsername = data.username;
+      });
+
+      // Show number of online users
+      socket.on("userCount", (data) => {
+        userCountDiv.textContent = `Users online: ${data.count}`;
+      });
+
+      // Show when a user joins       shows date and time
+      socket.on("userJoined", (data) => {
+        const msg = document.createElement("div");
+        msg.className = "message system"; // ✅ apply "system" class
+        msg.textContent = `${data.username} joined at ${new Date(
+          data.timestamp
+        ).toLocaleString()}`;
+        messagesDiv.appendChild(msg);
+        playSound();
+
+        messagesDiv.scrollTop = messagesDiv.scrollHeight;
+      });
+
+      // Show when a user leaves      shows date and time
+      socket.on("userLeft", (data) => {
+        const msg = document.createElement("div");
+        msg.className = "message system"; // ✅ apply "system" class
+        msg.textContent = `${data.username} left at ${new Date(
+          data.timestamp
+        ).toLocaleString()}`;
+        messagesDiv.appendChild(msg);
+        playSound();
+
+        messagesDiv.scrollTop = messagesDiv.scrollHeight;
+      });
+
+      // Show received messages     shows time only
+      socket.on("message", (data) => {
+        const msg = document.createElement("div");
+        msg.className = "message";
+        msg.classList.add(data.username === currentUsername ? "you" : "other");
+
+        const time = new Date(data.timestamp).toLocaleTimeString();
+
+        msg.innerHTML = `<strong>${data.username}:</strong> ${data.text} <span class="timestamp">${time}</span>`;
+        messagesDiv.appendChild(msg);
+        playSound();
+        messagesDiv.scrollTop = messagesDiv.scrollHeight;
+      });
+
+      // Send message when button is clicked          shows time only
+      sendBtn.addEventListener("click", () => {
+        const text = messageInput.value.trim();
+        if (text !== "") {
+          socket.emit("usermessage", text);
+
+          const msg = document.createElement("div");
+          msg.className = "message you";
+
+          const time = new Date().toLocaleTimeString(); // Local time for sender
+          msg.innerHTML = `<strong>You:</strong> ${text} <span class="timestamp">${time}</span>`;
+
+          messagesDiv.appendChild(msg);
+          playSound();
+          messagesDiv.scrollTop = messagesDiv.scrollHeight;
+
+          messageInput.value = "";
+        }
+      });
+
+      // Optional: Send message on Enter key press
+      messageInput.addEventListener("keydown", (e) => {
+        if (e.key === "Enter") {
+          sendBtn.click();
+        }
+      });
+    </script>
+  </body>
+</html>
