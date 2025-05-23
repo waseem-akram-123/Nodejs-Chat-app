@@ -44,11 +44,16 @@ const users = new Map();
 io.on("connection", (socket) => {
   console.log(`New connection: ${socket.id}`);
 
+  let username = prompt("Enter your name:");
+  if (!username) {
+    username = "Anonymous";
+  }
+
   // Assign a random username to each new user
-  const username = `User${Math.floor(Math.random() * 1000)}`;
+  // const username = `User${Math.floor(Math.random() * 1000)}`;
   users.set(socket.id, { username, active: true });
 
-  socket.emit("yourInfo", { username });   // written beacuse, so that client should know the current user (sender) & (reciver)
+  socket.emit("yourInfo", { username }); // written beacuse, so that client should know the current user (sender) & (reciver)
 
   // Notify everyone about new connection
   io.emit("userCount", { count: users.size });
