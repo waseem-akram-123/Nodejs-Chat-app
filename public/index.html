@@ -25,6 +25,14 @@
     <script>
       const socket = io();
 
+      let username = prompt("Enter your name:");
+      if (!username) {
+        username = "Anonymous";
+      }
+
+      // Send username to the server
+      socket.emit("setUsername", username);
+
       const userCountDiv = document.getElementById("userCount");
       const messagesDiv = document.getElementById("messages");
       const messageInput = document.getElementById("messageInput");
@@ -101,7 +109,7 @@
           msg.innerHTML = `<strong>You:</strong> ${text} <span class="timestamp">${time}</span>`;
 
           messagesDiv.appendChild(msg);
-          playSound();
+          // playSound();
           messagesDiv.scrollTop = messagesDiv.scrollHeight;
 
           messageInput.value = "";

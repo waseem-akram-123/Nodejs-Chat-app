@@ -44,31 +44,29 @@ const users = new Map();
 io.on("connection", (socket) => {
   console.log(`New connection: ${socket.id}`);
 
-  let username = prompt("Enter your name:");
-  if (!username) {
-    username = "Anonymous";
-  }
+  // Wait for the client to send the username
+  socket.on("setUsername", (username) => {
+    users.set(socket.id, { username, active: true });
 
-  // Assign a random username to each new user
-  // const username = `User${Math.floor(Math.random() * 1000)}`;
-  users.set(socket.id, { username, active: true });
+    socket.emit("yourInfo", { username }); // written because, so that client should know the current user (sender) & (receiver)
 
-  socket.emit("yourInfo", { username }); // written beacuse, so that client should know the current user (sender) & (reciver)
-
-  // Notify everyone about new connection
-  io.emit("userCount", { count: users.size });
-  io.emit("userJoined", { username, timestamp: new Date() });
+    // Notify everyone about new connection
+    io.emit("userCount", { count: users.size });
+    io.emit("userJoined", { username, timestamp: new Date() });
+  });
 
   // Handle incoming messages
   socket.on("usermessage", (message) => {
     const user = users.get(socket.id);
-    // Broadcast to everyone EXCEPT the sender
-    socket.broadcast.emit("message", {
-      username: user.username,
-      text: message,
-      timestamp: new Date(),
-      isCurrentUser: false,
-    });
+    if (user) {
+      // Broadcast to everyone EXCEPT the sender
+      socket.broadcast.emit("message", {
+        username: user.username,
+        text: message,
+        timestamp: new Date(),
+        isCurrentUser: false,
+      });
+    }
   });
 
   // Handle disconnection
